@@ -3,6 +3,7 @@ public class BrowserException extends RuntimeException {
 
 	public BrowserException() {
 		// TODO Auto-generated constructor stub
+		System.out.println("Sorry! Something went wrong.");
 	}
 
 	public BrowserException(String message) {
