@@ -14,7 +14,10 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListCell;
+import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextInputDialog;
 import javafx.scene.image.Image;
@@ -22,7 +25,10 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import javafx.scene.web.WebView;
+import javafx.util.Callback;
+
 import javax.imageio.ImageIO;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -61,6 +67,10 @@ public class BrowserView {
     private Button myBackButton;
     private Button myNextButton;
     private Button myHomeButton;
+    
+    //NEW
+    private Button myAddFavoritesButton;
+    
     // favorites
     private ComboBox<String> myFavorites;
     // get strings from resource file
@@ -96,8 +106,16 @@ public class BrowserView {
             update(valid);
         }
         else {
-            showError("Could not load " + url);
+            showError(String.format(myResources.getString("ErrorOnGo"), url));
         }
+        
+//        try{
+//        	URL valid = myModel.go(url);
+//        	update(valid);
+//        }
+//        catch(BrowserException e){
+//        	showError(e.getMessage());
+//        }
     }
 
     /**
@@ -143,7 +161,7 @@ public class BrowserView {
     private void showFavorite (String favorite) {
         showPage(myModel.getFavorite(favorite).toString());
         // reset favorites ComboBox so the same choice can be made again
-        myFavorites.setValue(null);
+//        myFavorites.setValue(null);
     }
 
     // update just the view to display given URL
@@ -213,6 +231,12 @@ public class BrowserView {
         result.getChildren().add(myNextButton);
         myHomeButton = makeButton("HomeCommand", event -> home());
         result.getChildren().add(myHomeButton);
+        
+        myAddFavoritesButton = makeButton("AddFavoriteCommand", event -> addFavorite());
+        result.getChildren().add(myAddFavoritesButton);
+        
+        
+        
         // if user presses button or enter in text field, load/show the URL
         EventHandler<ActionEvent> showHandler = new ShowPage();
         result.getChildren().add(makeButton("GoCommand", showHandler));
@@ -226,11 +250,15 @@ public class BrowserView {
         HBox result = new HBox();
         myFavorites = new ComboBox<String>();
         // ADD REST OF CODE HERE
+        result.getChildren().add(myFavorites);
+        myFavorites.setOnAction(event -> showFavorite(myFavorites.getValue()));
+        
         result.getChildren().add(makeButton("SetHomeCommand", event -> {
             myModel.setHome();
             enableButtons();
         }));
-        return result;
+        
+        return result;       
     }
 
     // makes a button using either an image or a label

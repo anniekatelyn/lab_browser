@@ -1,9 +1,11 @@
+import java.awt.Dimension;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.ResourceBundle;
 
 
 /**
@@ -21,6 +23,8 @@ public class BrowserModel {
     private int myCurrentIndex;
     private List<URL> myHistory;
     private Map<String, URL> myFavorites;
+    private ResourceBundle myResources = ResourceBundle.getBundle(DEFAULT_RESOURCE_PACKAGE);
+    public static final String DEFAULT_RESOURCE_PACKAGE = "resources/English";
 
 
     /**
@@ -38,22 +42,28 @@ public class BrowserModel {
      * Returns the first page in next history, null if next history is empty.
      */
     public URL next () {
-        if (hasNext()) {
-            myCurrentIndex++;
-            return myHistory.get(myCurrentIndex);
+        try{
+       		myCurrentIndex++;
+       		return myHistory.get(myCurrentIndex);
+       	}
+        catch(BrowserException e){
+        	e = new BrowserException(myResources.getString("NoNext"));
+        	throw e;
         }
-        return null;
     }
 
     /**
      * Returns the first page in back history, null if back history is empty.
      */
     public URL back () {
-        if (hasPrevious()) {
+    	try{
             myCurrentIndex--;
             return myHistory.get(myCurrentIndex);
         }
-        return null;
+    	catch(BrowserException e){
+    		e = new BrowserException(myResources.getString("NoBack"));
+        	throw e;
+    	}
     }
 
     /**
@@ -76,7 +86,7 @@ public class BrowserModel {
             return myCurrentURL;
         }
         catch (Exception e) {
-            return null;
+        	throw new BrowserException(); 
         }
     }
 
@@ -125,14 +135,17 @@ public class BrowserModel {
      * Returns URL from favorites associated with given name, null if none set.
      */
     public URL getFavorite (String name) {
-        if (name != null && !name.equals("") && myFavorites.containsKey(name)) {
+        try{
             return myFavorites.get(name);
         }
-        return null;
+        catch(BrowserException e){
+        	e = new BrowserException(myResources.getString("NoFav"));
+        	throw e;
+        }
     }
 
     // deal with a potentially incomplete URL
-    private URL completeURL (String possible) {
+    private URL completeURL (String possible) throws MalformedURLException {
         try {
             // try it as is
             return new URL(possible);
@@ -146,7 +159,8 @@ public class BrowserModel {
                     // e.g., let user leave off initial protocol
                     return new URL(PROTOCOL_PREFIX + possible);
                 } catch (MalformedURLException eee) {
-                    return null;
+                	eee = new MalformedURLException();
+                    throw eee;
                 }
             }
         }
