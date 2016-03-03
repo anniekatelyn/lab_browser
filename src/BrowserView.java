@@ -1,4 +1,6 @@
 import java.awt.Dimension;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.Optional;
 import java.util.ResourceBundle;
@@ -67,6 +69,8 @@ public class BrowserView {
     private Button myBackButton;
     private Button myNextButton;
     private Button myHomeButton;
+    private EventHandler<ActionEvent> showHandler = new ShowPage();
+    private String language;
     
     //NEW
     private Button myAddFavoritesButton;
@@ -83,6 +87,7 @@ public class BrowserView {
      */
     public BrowserView (BrowserModel model, String language) {
         myModel = model;
+        this.language = language;
         // use resources for labels
         myResources = ResourceBundle.getBundle(DEFAULT_RESOURCE_PACKAGE + language);
         BorderPane root = new BorderPane();
@@ -211,30 +216,29 @@ public class BrowserView {
         HBox result = new HBox();
         // create buttons, with their associated actions
         // old style way to do set up callback (anonymous class)
-        myBackButton = makeButton("BackCommand", new EventHandler<ActionEvent>() {
-            @Override      
-            public void handle (ActionEvent event) {       
-                back();        
-            }      
-        });
+        myBackButton = makeButton("BackCommand");
         result.getChildren().add(myBackButton);
         // new style way to do set up callback (lambdas)
-        myNextButton = makeButton("NextCommand", event -> next());
+        myNextButton = makeButton("NextCommand");
         result.getChildren().add(myNextButton);
-        myHomeButton = makeButton("HomeCommand", event -> home());
+        myHomeButton = makeButton("HomeCommand");
         result.getChildren().add(myHomeButton);
         
-        myAddFavoritesButton = makeButton("AddFavoriteCommand", event -> addFavorite());
+        myAddFavoritesButton = makeButton("AddFavoriteCommand");
         result.getChildren().add(myAddFavoritesButton);
         
         
         
         // if user presses button or enter in text field, load/show the URL
-        EventHandler<ActionEvent> showHandler = new ShowPage();
-        result.getChildren().add(makeButton("GoCommand", showHandler));
-        myURLDisplay = makeInputField(40, showHandler);
+  
+        result.getChildren().add(makeButton("GoCommand"));
+        myURLDisplay = makeInputField(40, showHandler());
         result.getChildren().add(myURLDisplay);
         return result;
+    }
+    
+    private EventHandler<ActionEvent> showHandler(){
+    	return showHandler;
     }
 
     // make buttons for setting favorites/home URLs
@@ -245,30 +249,45 @@ public class BrowserView {
         result.getChildren().add(myFavorites);
         myFavorites.setOnAction(event -> showFavorite(myFavorites.getValue()));
         
-        result.getChildren().add(makeButton("SetHomeCommand", event -> {
-            myModel.setHome();
-            enableButtons();
-        }));
+        result.getChildren().add(makeButton("SetHomeCommand"));
         
         return result;       
     }
 
+    private void setHomeCommand(){
+    	myModel.setHome();
+        enableButtons();
+    }
+    
     // makes a button using either an image or a label
-    private Button makeButton (String property, EventHandler<ActionEvent> handler) {
+    private Button makeButton (String property) {
+    	
         // represent all supported image suffixes
         final String IMAGEFILE_SUFFIXES = 
             String.format(".*\\.(%s)", String.join("|", ImageIO.getReaderFileSuffixes()));
 
         Button result = new Button();
-        String label = myResources.getString(property);
+        String label = myResources.getString(property).split(",")[0];
         if (label.matches(IMAGEFILE_SUFFIXES)) {
             result.setGraphic(new ImageView(
                 new Image(getClass().getResourceAsStream(DEFAULT_RESOURCE_PACKAGE + label))));
         } else {
             result.setText(label);
         }
-        result.setOnAction(handler);
-        return result;
+        String eventStr = myResources.getString(property).split(",")[1];  
+//        System.out.println(eventStr);
+        try{
+        	Class<?> clazz = Class.forName("BrowserView");
+			Method toRun = clazz.getMethod(eventStr);
+			toRun.setAccessible(true);
+    	    result.setOnAction((EventHandler<ActionEvent>) toRun.invoke(this));
+            return result;
+        }catch(Exception e){
+        	return result;
+        }
+	    
+        
+   
     }
 
     // make text field for input
